@@ -1,0 +1,66 @@
+# 基础配置
+MODEL:
+  TYPE: FastPose  # 必须与注册的类名一致（区分大小写）
+  PRETRAINED: ''
+  TRY_LOAD: ''
+  NUM_LAYERS: 50  # ResNet50
+  # DCN:
+  #   MODULATED: false
+  #   DEFORM_GROUP: 1
+  #   FALLBACK_ON_STRIDE: false
+  # STAGE_WITH_DCN:
+  # - false
+  # - true
+  # - true
+  # - true
+
+DATASET:
+  TRAIN:
+    TYPE: CrowdPose  # 必须与数据集类名一致
+    ROOT: ./data/crowdpose  # 数据集根路径（相对项目根目录）
+    IMG_PREFIX: images/train  # 训练图像子目录（相对ROOT）
+    ANN: annotations/crowdpose_train.json  # 标注文件（相对ROOT）
+    BATCH_SIZE: 16  # Windows单卡建议16
+    NUM_WORKERS: 0  # Windows必须设为0
+  VAL:
+    TYPE: CrowdPose
+    ROOT: ./data/crowdpose
+    IMG_PREFIX: images/val
+    ANN: annotations/crowdpose_val.json
+    BATCH_SIZE: 16
+    NUM_WORKERS: 0
+
+TRAIN:
+  WORLD_SIZE: 1  # 单卡训练设为1
+  BATCH_SIZE: 16
+  BEGIN_EPOCH: 0
+  END_EPOCH: 100  # 训练总轮数（CrowdPose建议140轮）
+  OPTIMIZER: adam
+  LR: 0.0001  # 学习率（ResNet50建议0.0001）
+  LR_STEP: [90, 120]  # 学习率衰减轮数
+  LR_FACTOR: 0.1
+  DPG_MILESTONE: 100  # Data Parallel Growing 起始轮（单卡可设大值避免触发）
+  DPG_STEP: [120, 130]  # DPG 阶段学习率衰减轮数
+  CHECKPOINT: ./exp/crowdpose/res50/  # 模型保存路径
+  LOG_DIR: ./exp/crowdpose/res50/logs/  # 日志路径
+
+LOSS:
+  TYPE: MSELoss
+DETECTOR:
+  NAME: yolo
+  CONFIG: detector/yolo/cfg/yolov3-spp.cfg
+  WEIGHTS: detector/yolo/data/yolov3-spp.weights
+  NMS_THRES: 0.6
+  CONFIDENCE: 0.05
+TEST:
+  TYPE: Mscoco_det
+  FLIP_TEST: True  # 测试时水平翻转增强
+  POST_PROCESS: True
+  SHIFT_HEATMAP: True
+
+DATA_PRESET:
+  TYPE: simple
+  NUM_JOINTS: 14  # CrowdPose 14个关键点
+  IMAGE_SIZE: [256, 192]  # 标准输入尺寸
+  HEATMAP_SIZE: [64, 48]
+  SIGMA: 2
